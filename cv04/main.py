@@ -45,8 +45,8 @@ def histogram_equalize(file: str):
     hist = np.histogram(img.flatten(), bins=256, range=(0, 256))[0]
 
     img_eq = np.zeros_like(img, dtype=np.float64)
-    qk = img.max()
-    q0 = img.min()
+    qk = 255
+    q0 = 0
     H = hist.cumsum()
     N = img.size
     for p in range(256):
@@ -63,23 +63,19 @@ def histogram_equalize(file: str):
     axs[1, 1].hist(img_eq.flatten(), bins=256, range=(0, 256))
     axs[1, 1].set_title('Histogram of equalized image')
 
-
-
-
-
-
-
     plt.tight_layout()
     plt.show()
 
 
 if __name__ == '__main__':
+    folder = "cv04/"
     filenames01 = [
-        ('Cv04_porucha1.bmp', 'Cv04_porucha1_etalon.bmp'),
-        ('Cv04_porucha2.bmp', 'Cv04_porucha2_etalon.bmp'),
+        ('cv04/Cv04_porucha1.bmp', 'cv04/Cv04_porucha1_etalon.bmp'),
+        ('cv04/Cv04_porucha2.bmp', 'cv04/Cv04_porucha2_etalon.bmp'),
     ]
-    # for fns in filenames01:
-    #     brightness_correct(fns)
+    
+    for fns in filenames01:
+        brightness_correct(fns)
 
     filename02 = 'Cv04_rentgen.bmp'
-    histogram_equalize(filename02)
+    histogram_equalize(folder + filename02)
