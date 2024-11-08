@@ -1,7 +1,7 @@
 from collections import Counter
 
 
-def code_arithmetically(data: list[str]):
+def code_arithmetically(data: list[str]) -> tuple[float, dict[str: tuple[float ,float]]]:
     # Init
     frequency = Counter(data)
     data_len = len(data)
@@ -19,7 +19,7 @@ def code_arithmetically(data: list[str]):
         low_boundary = high_boundary
     # print(probs_intervals)
 
-    # Build new interval from known symbols intervals IZ = [ZL, HL)
+    # Build new interval from known symbols' intervals IZ = [ZL, HL)
     interval = (0, 1)  # I = [L, H)
     for symbol in data:
         # Count LB and HB of new interval
@@ -31,16 +31,46 @@ def code_arithmetically(data: list[str]):
     # Copmute their difference, convert result to exp. form (ex. 2.642e-05) and extract the degree of 'ten'
     float_position = int(str(interval[1]-interval[0])[-2:])
     shortest_number = round(interval[0], float_position)
+
+    print(f"RESULT INTERVAL: {interval}")
     
     return shortest_number, probs_intervals
 
 
-def decode_arithmetically(coding_result: float, probs_intervals: list[tuple[float, float]]):
-    pass
+def decode_arithmetically(coding_result: float, probs_intervals: dict[tuple[float, float]], data_len: int) -> list[str]:
+    # Init
+    decoded_data = []
+
+    interval = (0, 1)  # I = [L, H)
+    # for symbol, (low_boundary, high_boundary) in probs_intervals.items():
+    for _ in range(data_len):
+        L, H = interval
+        code = (coding_result - L) / (H - L)  # K = (C - L) / (H - L)
+
+        # Find corresponding symbol as ZL <= K < ZH
+        for symbol, (low_boundary, high_boundary) in probs_intervals.items(): 
+            if low_boundary <= code < high_boundary:
+                decoded_symbol = symbol
+        decoded_data.append(decoded_symbol)
+        
+        # Compute new intevarl boundaries
+        low_boundary = L + probability_intervals[decoded_symbol][0] * (H - L)   # L + ZL * (H - L)
+        high_boundary = L + probability_intervals[decoded_symbol][1] * (H - L)  # L + ZH * (H - L)
+        interval = [low_boundary, high_boundary]
+
+    return decoded_data
 
 
 if __name__ == "__main__":
+    """
+    Print interval.
+    Print the shortest num that was chosen.
+    """
     data = 'CBAABCADAC'
+    print(f"Original data: {data}\n")
     coding_result, probability_intervals = code_arithmetically(data)
-    decoded_data = decode_arithmetically(coding_result, probability_intervals)
+    print(f"Result of coding: {coding_result}")
+    print(f"Probs intervals: {probability_intervals}")
+    decoded_data = decode_arithmetically(coding_result, probability_intervals, len(data))
+    print(f"\nDecoded data: {''.join(decoded_data)}")
 
