@@ -6,3 +6,6 @@
 __pycache__
 
 *.bin
+
+Cv08_vid
+*.mp4
