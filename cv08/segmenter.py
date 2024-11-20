@@ -18,53 +18,51 @@ def histogram_difference(prev_frame, curr_frame):
     
     return np.sum(np.abs(hist_prev - hist_curr))
 
-# TODO: fix algorithm
+
 def dct_difference(prev_frame, curr_frame, top_coeffs=5):    
-    def compute_dct(gray_frame):
-        M, N = gray_frame.shape
-        dct_result = np.zeros((M, N))
+    ### This implemantation might work, but is very slow
+    # def compute_dct(gray_frame):
+    #     M, N = gray_frame.shape
+    #     dct_result = np.zeros((M, N))
         
-        def c(k):
-            return 1 / np.sqrt(2) if k == 0 else 1
+    #     # coefficient compution
+    #     c = lambda k: 1 / np.sqrt(2) if k == 0 else 1
         
-        # Создаем индексы x и y, а также u и v
-        x = np.arange(M)
-        y = np.arange(N)
-        u = np.arange(M).reshape((M, 1))
-        v = np.arange(N).reshape((N, 1))
+    #     # init
+    #     x = np.arange(M)
+    #     y = np.arange(N)
+    #     u = np.arange(M).reshape((M, 1))
+    #     v = np.arange(N).reshape((N, 1))
         
-        # Вычисляем матрицы косинусов для всех значений x, y, u и v
-        cos_x_u = np.cos((2 * x[:, None] + 1) * u * np.pi / (2 * M))  # M x M
-        cos_y_v = np.cos((2 * y + 1) * v * np.pi / (2 * N))           # N x N
+    #     # compute cos matrices for x, y, u and v
+    #     cos_x_u = np.cos((2 * x + 1) * u * np.pi / (2 * M))  # M x M 
+    #     cos_y_v = np.cos((2 * y + 1) * v * np.pi / (2 * N))  # N x N 
         
-        # Вычисляем DCT
-        for u in range(M):
-            for v in range(N):
-                # Вычисляем сумму по x и y для заданных u и v
-                sum_result = np.sum(gray_frame * cos_x_u[:, u] * cos_y_v[:, v])
-                dct_result[u, v] = (2 * c(u) * c(v) / N) * sum_result
+    #     # compute DCT
+    #     for u in range(M):
+    #         for v in range(N):
+    #             # compute the sum along x and y for u and v
+    #             sum_result = np.sum(gray_frame * cos_x_u[:, u].reshape(M, 1) * cos_y_v[:, v])
+    #             dct_result[u, v] = (2 * c(u) * c(v) / N) * sum_result
         
-        return dct_result
+    #     return dct_result
 
+    prev_frame_dct = cv2.dct(np.float32(prev_frame))
+    curr_frame_dct = cv2.dct(np.float32(curr_frame))
 
-    prev_frame_dct = compute_dct(prev_frame)
-    curr_frame_dct = compute_dct(curr_frame)
+    # compute power of each frame dct
+    prev_frame_power = (prev_frame_dct ** 2).flatten()
+    curr_frame_power = (curr_frame_dct ** 2).flatten()
 
-    prev_frame_dct = prev_frame_dct.flatten() * prev_frame_dct.flatten()
-    curr_frame_dct = curr_frame_dct.flatten() * curr_frame_dct.flatten()
+    # find 'top_coeffs' the most higher values
+    prev_top_coeffs = np.sort(prev_frame_power)[::-1][:top_coeffs]
+    curr_top_coeffs = np.sort(curr_frame_power)[::-1][:top_coeffs]
 
-    prev_frame_energy = np.log(prev_frame_dct)
-    curr_frame_energy = np.log(curr_frame_dct)
-
-    top_indices = np.argpartition(prev_frame_energy, -top_coeffs)[-top_coeffs:]  # Индексы P самых больших значений
-    prev = prev_frame_energy[top_indices]
-    top_indices = np.argpartition(curr_frame_energy, -top_coeffs)[-top_coeffs:]
-    curr = curr_frame_energy[top_indices]
+    # normilize using logarithm
+    prev = np.log(prev_top_coeffs)
+    curr = np.log(curr_top_coeffs)
     
-
-    return np.sum(prev - curr)
-
-
+    return np.sum(abs(prev - curr))
 
 
 if __name__ == "__main__":
@@ -79,14 +77,17 @@ if __name__ == "__main__":
     method_3_diffs = []
     method_4_diffs = []
 
+    # per frame
     for i in range(1, NFrames):
         ret, bgr = cap.read()
 
+        # if reading wasn't successful => quit
         if not ret:
             break
-
+        
         curr_gray = np.array(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY), dtype=np.int64)
 
+        # compute difference btw frame[i] and frame[i+1] using all 4 methods. Store results for every method
         method_1_diffs.append(abs_pixel_sum_difference(prev_gray, curr_gray))
         method_2_diffs.append(sum_pixel_abs_difference(prev_gray, curr_gray))
         method_3_diffs.append(histogram_difference(prev_gray, curr_gray))
@@ -96,45 +97,41 @@ if __name__ == "__main__":
     
     cap.release()
 
-    vs = np.zeros(NFrames)
+    vs = np.zeros(NFrames)  # vector to represent segments boundaries
+
+    # Plot the differences
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    
+    # 1)
     MAX = max(method_1_diffs)
     vs[208] = MAX
     vs[268] = MAX
-
-    # Plot the differences
-    fig, axs = plt.subplots(2, 2, figsize=(10, 8))  # 2 строки, 2 столбца подграфиков
-
-    # Первый подграфик
     axs[0, 0].plot(vs, color='red', label='Segments boarders')
     axs[0, 0].plot(method_1_diffs, color='blue', label='Frame difference')
-    # axs[0, 0].set_xlabel('Frames')
-    # axs[0, 0].set_ylabel('Sum of Pixel Differences')
     axs[0, 0].set_title('Method #1')
-    axs[0, 0].grid()
 
-    # Второй подграфик
+    # 2)
+    MAX = max(method_2_diffs)
+    vs[208] = MAX
+    vs[268] = MAX
     axs[0, 1].plot(vs, color='red', label='Segments boarders')
     axs[0, 1].plot(method_2_diffs, color='blue', label='Frame difference')
-    # axs[0, 1].set_xlabel('Frames')
-    # axs[0, 1].set_ylabel('Sum of Pixel Differences')
     axs[0, 1].set_title('Method #2')
-    axs[0, 1].grid()
-
-    # Третий подграфик
+    
+    # 3)
+    MAX = max(method_3_diffs)
+    vs[208] = MAX
+    vs[268] = MAX
     axs[1, 0].plot(vs, color='red', label='Segments boarders')
     axs[1, 0].plot(method_3_diffs, color='blue', label='Frame difference')
     axs[1, 0].set_title('Method #3')
-    axs[1, 0].grid()
 
-    # Четвертый подграфик
+    # 4)
+    MAX = max(method_4_diffs)
+    vs[208] = MAX
+    vs[268] = MAX
     axs[1, 1].plot(vs, color='red', label='Segments boarders')
     axs[1, 1].plot(method_4_diffs, color='blue', label='Frame difference')
     axs[1, 1].set_title('Method #4')
-    axs[1, 1].grid()
 
-    # Добавляем общие подписи
-    # fig.suptitle("Четыре функции на подграфиках")  # Общий заголовок для всех графиков
-    # plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Оставляем место для общего заголовка
-
-    # Отображаем график
     plt.show()
