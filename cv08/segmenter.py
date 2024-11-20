@@ -134,4 +134,32 @@ if __name__ == "__main__":
     axs[1, 1].plot(method_4_diffs, color='blue', label='Frame difference')
     axs[1, 1].set_title('Method #4')
 
-    plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close(fig)
+
+    ### Show the result of one of the methods on the video ###
+    method_to_show = 1  # 1, 2, 3 or 4
+    # get diffs vector of the chosen method
+    diffs = [method_1_diffs, method_2_diffs, method_3_diffs, method_4_diffs][method_to_show-1]
+    vs = np.zeros(NFrames-1)
+    MAX = max(diffs)
+    vs[208] = MAX
+    vs[268] = MAX
+
+    cap = cv2.VideoCapture('cv08/cv08_video.mp4')
+    NFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    t = np.linspace(1, NFrames-1, NFrames-1)  # time (frames)
+    for i in range(1, NFrames):
+        ret, bgr = cap.read()
+        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb, aspect='auto', extent=[min(t), max(t), min(diffs), max(diffs)])  # plot curr frame
+        plt.plot(t, vs, linewidth=2, color='r')  # plot segments boundaries
+        plt.plot(t, diffs, linewidth=2, color='b')  # plot frame[i-1] and frame[i] diffs
+        l = plt.axvline(x=i, linewidth=2, color='g')  # plot green line to represent time line
+        plt.axis([min(t), max(t), min(diffs), max(diffs)])
+        plt.show(block=False)
+        plt.pause(0.001)
+        plt.clf()  # clear figure
+
+    cap.release()
