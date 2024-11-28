@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
 
 
 def detect_circles(img: np.ndarray):
@@ -49,8 +50,40 @@ def detect_circles(img: np.ndarray):
         cv2.destroyAllWindows()
 
 
-def markup_based_code(img: np.ndarray):
-    ...
+def markup_based_code(gray_img: np.ndarray):
+    markers = []
+    eroded = gray_img.copy()
+    kernel = np.ones((3, 3), np.uint8)
+
+    while np.any(eroded):
+        prev_eroded = eroded.copy()
+        eroded = cv2.erode(eroded, kernel, iterations=1)
+        eroded_part = prev_eroded - eroded
+
+        # cv2.imshow('1', prev_eroded)
+        # cv2.waitKey(0)
+        # cv2.imshow('2', eroded)
+        # cv2.waitKey(0)
+        # cv2.imshow('3', eroded_part)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        coords = np.column_stack(np.where(eroded_part == 1))  # coordinates of markers
+        markers.extend(coords)
+
+    return markers
+
+
+def markup_based_decode(markers, shape):
+    reconstructed = np.zeros(shape, dtype=np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
+
+    for marker in markers:
+        temp = np.zeros(shape, dtype=np.uint8)
+        temp[marker] = 1
+        reconstructed = cv2.dilate(reconstructed, kernel) + temp
+
+    return reconstructed
 
 
 if __name__ == "__main__":
@@ -65,22 +98,52 @@ if __name__ == "__main__":
         'Cv11_c06.bmp',
     ]
 
-    for filename in filenames:
-        try:
-            img = cv2.imread(cv_dir + filename)
-            detect_circles(img)
-        except Exception as e:
-            print(f'Chyba pri cteni souboru: {filename}.\n{e}\n')
-            exit(1)
+    # for filename in filenames:
+    #     try:
+    #         img = cv2.imread(cv_dir + filename)
+    #         detect_circles(img)
+    #     except Exception as e:
+    #         print(f'Chyba pri cteni souboru: {filename}.\n{e}\n')
+    #         exit(1)
 
     ### Task 2 ###
     filename = 'Cv11_merkers.bmp'
     try:
         img = cv2.imread(cv_dir + filename)
-        markup_based_code(img)
     except Exception as e:
         print(f'Chyba pri cteni souboru: {filename}.\n{e}\n')
         exit(1)
+
+    # split the img to 2 parts (up and bottom)
+    H = img.shape[0]  # img height
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) / 255.0  # convert to grayscale binary img
+    up_gray = gray[:H // 2, :]
+    bottom_gray = gray[H // 2:, :]
+
+    # run markup based coding on two halfs
+    up_markers = markup_based_code(up_gray)
+    bottom_markers = markup_based_code(bottom_gray)
+
+    # run decoding
+    reconstructed_upper = markup_based_decode(up_markers, up_gray.shape)
+    reconstructed_lower = markup_based_decode(bottom_markers, bottom_gray.shape)
+
+    # reconstruct the original img from two halfs
+    reconstructed_image = np.vstack((reconstructed_upper, reconstructed_lower))
+
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.title("Původní obrázek")
+    plt.imshow(gray, cmap='gray')
+    plt.subplot(1, 2, 2)
+    plt.title("Rekonstruovaný obrázek")
+    plt.imshow(reconstructed_image, cmap='gray')
+    plt.show()
+
+    # markers coords
+    print(len(up_markers))
+    print("=============")
+    print(len(bottom_markers))
     
 
         
