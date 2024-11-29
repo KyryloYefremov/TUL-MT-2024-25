@@ -55,34 +55,28 @@ def markup_based_code(gray_img: np.ndarray):
     eroded = gray_img.copy()
     kernel = np.ones((3, 3), np.uint8)
 
+    erosion_number = 0
+
     while np.any(eroded):
+        erosion_number += 1
         prev_eroded = eroded.copy()
         eroded = cv2.erode(eroded, kernel, iterations=1)
         eroded_part = prev_eroded - eroded
 
-        # cv2.imshow('1', prev_eroded)
-        # cv2.waitKey(0)
-        # cv2.imshow('2', eroded)
-        # cv2.waitKey(0)
-        # cv2.imshow('3', eroded_part)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
         coords = np.column_stack(np.where(eroded_part == 1))  # coordinates of markers
-        markers.extend(coords)
+        markers = coords
 
-    return markers
+    return markers, erosion_number-1
 
 
-def markup_based_decode(markers, shape):
+def markup_based_decode(markers, shape, erosions_number):
     reconstructed = np.zeros(shape, dtype=np.uint8)
     kernel = np.ones((3, 3), np.uint8)
 
     for marker in markers:
-        temp = np.zeros(shape, dtype=np.uint8)
-        temp[marker] = 1
-        reconstructed = cv2.dilate(reconstructed, kernel) + temp
+        reconstructed[marker[0], marker[1]] = 1
 
+    reconstructed = cv2.dilate(reconstructed, kernel, iterations=erosions_number)
     return reconstructed
 
 
@@ -98,13 +92,13 @@ if __name__ == "__main__":
         'Cv11_c06.bmp',
     ]
 
-    # for filename in filenames:
-    #     try:
-    #         img = cv2.imread(cv_dir + filename)
-    #         detect_circles(img)
-    #     except Exception as e:
-    #         print(f'Chyba pri cteni souboru: {filename}.\n{e}\n')
-    #         exit(1)
+    for filename in filenames:
+        try:
+            img = cv2.imread(cv_dir + filename)
+            detect_circles(img)
+        except Exception as e:
+            print(f'Chyba pri cteni souboru: {filename}.\n{e}\n')
+            exit(1)
 
     ### Task 2 ###
     filename = 'Cv11_merkers.bmp'
@@ -121,29 +115,40 @@ if __name__ == "__main__":
     bottom_gray = gray[H // 2:, :]
 
     # run markup based coding on two halfs
-    up_markers = markup_based_code(up_gray)
-    bottom_markers = markup_based_code(bottom_gray)
+    up_markers, erosions_num_up = markup_based_code(up_gray)
+    bottom_markers, erosions_num_bottom = markup_based_code(bottom_gray)
+
+    up_coded_img = np.zeros(up_gray.shape)
+    for marker in up_markers:
+        up_coded_img[marker[0], marker[1]] = 1
+    bottom_coded_img = np.zeros(bottom_gray.shape)
+    for marker in bottom_markers:
+        bottom_coded_img[marker[0], marker[1]] = 1
+    coded_img = np.vstack((up_coded_img, bottom_coded_img))
 
     # run decoding
-    reconstructed_upper = markup_based_decode(up_markers, up_gray.shape)
-    reconstructed_lower = markup_based_decode(bottom_markers, bottom_gray.shape)
+    reconstructed_upper = markup_based_decode(up_markers, up_gray.shape, erosions_num_up)
+    reconstructed_lower = markup_based_decode(bottom_markers, bottom_gray.shape, erosions_num_bottom)
 
     # reconstruct the original img from two halfs
     reconstructed_image = np.vstack((reconstructed_upper, reconstructed_lower))
 
     plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     plt.title("Původní obrázek")
     plt.imshow(gray, cmap='gray')
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 2)
+    plt.title("Zakodovaný obrázek")
+    plt.imshow(coded_img, cmap='gray')
+    plt.subplot(1, 3, 3)
     plt.title("Rekonstruovaný obrázek")
     plt.imshow(reconstructed_image, cmap='gray')
     plt.show()
 
     # markers coords
-    print(len(up_markers))
+    print(f"Obrazek 1:\nZnacky: {up_markers}\nPocet erozi: {erosions_num_up}")
     print("=============")
-    print(len(bottom_markers))
+    print(f"Obrazek 2:\nZnacky: {bottom_markers}\nPocet erozi: {erosions_num_bottom}")
     
 
         
