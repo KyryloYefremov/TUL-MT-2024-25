@@ -6,6 +6,7 @@ def task01():
     TASK 01:
     Naprogramujte převodník mezi binárním a Grayovým kódem pro 8 bitů. Výsledek čísel 0 až 255 vypište do konzole.
     """
+    print("TASK 01 (GRAY CODE)")
     nums = range(256)
     print(f"NUM      BIN      GRAY")
     for num in nums:
@@ -46,8 +47,19 @@ def task03():
     Vstup bude řetězec písmen (A až Z - bez diakritiky) napsaný
     na klávesnicí a odeslaný pomocí klávesy ENTER.
     """
-    ...
+    print("TASK 03 (BWT)")
+    input_str = input("Type string: ")
+    coded_input, input_str_index = code_burrows_wheeler(input_str)
+    decoded_input = decode_burrows_wheeler(coded_input, input_str_index)
+
+    print(f"INPUT STRING:   {input_str}")
+    print(f"CODED STRING:   {coded_input}, index: {input_str_index}")
+    print(f"DECODED STRING: {decoded_input}\n")
+
 
 if __name__ == "__main__":
-    # task01()
+    task01()
+    print('\n\n')
     task02()
+    print('\n\n')
+    task03()

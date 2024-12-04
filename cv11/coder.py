@@ -54,3 +54,37 @@ def decode_move_to_front(coded_str: list[int]):
         stack.insert(0, stack.pop(char_idx))
     
     return ''.join(decoded_chars)
+
+
+def code_burrows_wheeler(input_str: str) -> tuple[str, int]:
+    N = len(input_str)  # chars count
+    shift_matrix = [input_str]  # cyclic input word shift matrix
+
+    # shift the word on 1 with every iteration
+    for n in range(1, N):
+        shift_matrix.append(input_str[-n:] + input_str[:N-n])
+
+    # lexicographic (by alphabet) matrix sorting
+    sorted_matrix = sorted(shift_matrix)
+
+    # get coded str as last chars of each word in matrix (or as a last matrix column)
+    coded_str = ''.join([word[-1] for word in sorted_matrix])
+
+    # get index of input word in the sorted shift matrix
+    input_str_idx = sorted_matrix.index(input_str)
+
+    return coded_str, input_str_idx
+
+
+def decode_burrows_wheeler(coded_str: str, input_str_idx: int) -> str:
+    N = len(coded_str)
+    coded_list = list(coded_str)
+
+    # N-1 times:
+    for _ in range(N):
+        # sort by alphabet coded list
+        sorted_coded_list = sorted(coded_list)
+        # add to coded list elements last char of sorted list elements
+        coded_list = [coded_list[i] + sorted_coded_list[i][-1] for i in range(N)]
+
+    return sorted_coded_list[input_str_idx]
