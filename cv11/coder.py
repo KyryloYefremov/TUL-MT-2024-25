@@ -21,3 +21,36 @@ def bin_to_gray_converter(bin_num: str) -> str:
             gray_code_num[digit_idx] = digit
 
     return ''.join(gray_code_num)
+
+
+def code_move_to_front(input_str: str):
+    input_str = input_str.lower()
+    stack = [chr(char) for char in range(ord('a'), ord('z')+1)]
+    coded_chars = []
+
+    try:
+        for char in input_str:
+            # get char index
+            char_idx = stack.index(char)
+            # add its index as new code for this char
+            coded_chars.append(char_idx)
+            # put this char to the beginning of the stack
+            stack.insert(0, stack.pop(char_idx))
+
+        return coded_chars
+    except ValueError:
+        print("This coding method can code only english chars.")
+        raise ValueError
+
+
+def decode_move_to_front(coded_str: list[int]):
+    stack = [chr(char) for char in range(ord('a'), ord('z')+1)]
+    decoded_chars = []
+
+    for char_idx in coded_str:
+        # add decoded char to result list
+        decoded_chars.append(stack[char_idx])
+        # put this char to the beginning of the stack
+        stack.insert(0, stack.pop(char_idx))
+    
+    return ''.join(decoded_chars)
