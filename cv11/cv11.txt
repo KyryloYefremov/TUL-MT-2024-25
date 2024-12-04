@@ -1,0 +1,3 @@
+1. vypsat dvojkove 256 cisel
+2. s konzole brat retezec (zakodovany a odkodovany)
+3. s konzole brat retezec (zakodovany a odkodovany) + radek, kde se to nachazi
