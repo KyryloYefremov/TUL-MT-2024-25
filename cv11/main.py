@@ -1,13 +1,13 @@
 from coder import *
 
 
-def task01():
+def task01(nums_to_convert: int):
     """
     TASK 01:
     Naprogramujte převodník mezi binárním a Grayovým kódem pro 8 bitů. Výsledek čísel 0 až 255 vypište do konzole.
     """
     print("TASK 01 (GRAY CODE)")
-    nums = range(256)
+    nums = range(nums_to_convert)
     print(f"NUM      BIN      GRAY")
     for num in nums:
         bin_num = num2bin8bit(num)
@@ -58,7 +58,7 @@ def task03():
 
 
 if __name__ == "__main__":
-    task01()
+    task01(nums_to_convert=8)
     print('\n\n')
     task02()
     print('\n\n')
